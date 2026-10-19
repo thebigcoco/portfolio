@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d366b'/%3E%3Cpath d='M6 23 L12.5 16.5 L17 19.5 L25.5 10' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='25.5' cy='10' r='2.8' fill='%236da7ec'/%3E%3C/svg%3E">
 <style>
 :root {
   color-scheme: light;
@@ -125,7 +126,7 @@ svg { display:block; width:100%; overflow:visible; }
 
   <p class="note">
     資料來源：野村投信官網（基金淨值）、Yahoo Finance（ETF 含息調整價）。報告產生時間 __GENERATED__。<br>
-    基金淨值於當天 16:00 後才公布，所有標的一律以報告更新日的前一天為結束日。區間報酬 = 結束日淨值 ÷ 起始日淨值 − 1，例如 2026-09-28 的近一年 = 2026-09-28 淨值 ÷ 2025-09-28 淨值 − 1（與野村投信官網算法相同）；起始日若非交易日，取前一個交易日的淨值；結束日為月底時，起始日也取月底；成立時間不足的區間顯示「—」。
+    結束日為所有標的都已公布淨值的最新交易日：當天淨值已公布就用當天，否則用前一個交易日；股票與 ETF 只採用收盤後的價格。區間報酬 = 結束日淨值 ÷ 起始日淨值 − 1，例如 2026-09-28 的近一年 = 2026-09-28 淨值 ÷ 2025-09-28 淨值 − 1（與野村投信官網算法相同）；起始日若非交易日，取前一個交易日的淨值；結束日為月底時，起始日也取月底；成立時間不足的區間顯示「—」。
     年化報酬只計算一年以上的區間。台股加權指數 (^TWII) 為價格指數，未含現金股利，與含息標的比較時會偏低。過去績效不代表未來表現，本報告僅供參考，不構成投資建議。
   </p>
 </div>
@@ -133,7 +134,7 @@ svg { display:block; width:100%; overflow:visible; }
 <script>
 const DATA = __DATA__;
 const GENERATED = new Date("__GENERATED__".slice(0, 10) + "T00:00:00");
-const CUTOFF = new Date(GENERATED.getFullYear(), GENERATED.getMonth(), GENERATED.getDate() - 1);
+const CUTOFF = new Date(GENERATED.getFullYear(), GENERATED.getMonth(), GENERATED.getDate());
 const PERIODS = [
   { key:"1M",  label:"近一個月", months:1 },
   { key:"3M",  label:"近三個月", months:3 },
@@ -185,8 +186,8 @@ const active = () => DATA.filter((_, i) => state.inst[i]);
 function asOf() {
   const list = active();
   if (!list.length) return null;
-  // 基金淨值當天 16:00 後才公布，結束日固定為報告更新日的前一天；
-  // 該日若非交易日，各標的取當日（含）之前最近一筆資料
+  // 結束日 = 所選標的都已公布資料的最新交易日（今天的淨值已公布就用今天，否則用前一個交易日）；
+  // 盤中尚未收盤的價格已在 build_report.py 排除
   return new Date(Math.min(CUTOFF.getTime(), ...list.map(s => s.t[s.t.length - 1])));
 }
 function periodRange(p, end) {
@@ -449,9 +450,7 @@ function render() {
   buildControls();
   const end = asOf();
   document.getElementById("asof").textContent = end
-    ? `資料截至 ${fmtDate(end)}（報告更新日 ${fmtDate(GENERATED)}，${end < CUTOFF
-        ? `前一天 ${fmtDate(CUTOFF)} 非交易日，採最近交易日`
-        : "以前一天為準"}）· 共 ${DATA.length} 檔標的`
+    ? `資料截至 ${fmtDate(end)}（所選標的都已公布淨值的最新交易日）· 報告更新於 __GENERATED__ · 共 ${DATA.length} 檔標的`
     : "請至少選擇一個標的";
   if (end) { renderTable(end); renderChart(end); renderRisk(end); }
   else { renderTable(new Date()); }

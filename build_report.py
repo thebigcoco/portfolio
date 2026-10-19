@@ -57,6 +57,12 @@ def fetch_yahoo(inst):
     adj = res["indicators"]["adjclose"][0]["adjclose"]
     close = res["indicators"]["quote"][0]["close"]
     dates = [datetime.fromtimestamp(ts, tz).strftime("%Y-%m-%d") for ts in res["timestamp"]]
+    # 盤中或剛收盤時，當天的價格還在變動：收盤 30 分鐘後才採用當天資料
+    close_ts = res["meta"].get("currentTradingPeriod", {}).get("regular", {}).get("end")
+    if close_ts and datetime.now().timestamp() < close_ts + 1800:
+        today = datetime.fromtimestamp(close_ts, tz).strftime("%Y-%m-%d")
+        if dates and dates[-1] == today:
+            dates = dates[:-1]   # 後面的 zip() 會一併截掉 adj / close 的最後一筆
     series, factor = {}, {}
     for d, v, c in zip(dates, adj, close):
         if v:
