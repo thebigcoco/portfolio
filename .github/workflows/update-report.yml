@@ -2,9 +2,9 @@ name: 每日更新報告
 
 on:
   schedule:
-    # GitHub 排程使用 UTC：10:00 UTC = 台灣時間 18:00。
+    # GitHub 排程使用 UTC：09:30 UTC = 台灣時間 17:30。
     # 尖峰時段 GitHub 排程可能延遲數分鐘到半小時。
-    - cron: "0 10 * * *"
+    - cron: "30 9 * * *"
   workflow_dispatch:   # 可在 GitHub 的 Actions 頁面手動執行
 
 permissions:

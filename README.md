@@ -6,7 +6,7 @@
 
 ## 自動更新
 
-GitHub Actions 每天台灣時間 18:00 自動產生報告並發布（`.github/workflows/update-report.yml`），也可以在 Actions 頁面手動執行「每日更新報告」。
+GitHub Actions 每天台灣時間 17:30 自動產生報告並發布（`.github/workflows/update-report.yml`），也可以在 Actions 頁面手動執行「每日更新報告」。
 
 ## 手動更新報告
 

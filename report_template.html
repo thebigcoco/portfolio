@@ -66,6 +66,11 @@ td .meta { display:block; font-size:12px; color:var(--muted); }
 .up { color:var(--up); } .down { color:var(--down); } .na { color:var(--muted); }
 td.best { font-weight:700; }
 td.best::after { content:"▲"; font-size:9px; margin-left:3px; color:var(--muted); vertical-align:2px; }
+.ma-summary { margin:0 0 12px; font-size:14px; }
+.sig { display:inline-flex; align-items:center; gap:3px; font-size:12px; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+.sig.cross { color:var(--down); background:color-mix(in srgb, var(--down) 14%, transparent); font-weight:600; }
+.sig.below { color:var(--down); }
+.sig.above { color:var(--text-2); }
 .chart-box { position:relative; }
 svg { display:block; width:100%; overflow:visible; }
 .axis text { fill:var(--muted); font-size:11px; }
@@ -100,6 +105,13 @@ svg { display:block; width:100%; overflow:visible; }
         <input type="date" id="cStart"> 至 <input type="date" id="cEnd">
       </div>
     </div>
+  </section>
+
+  <section class="card">
+    <h2>均線訊號</h2>
+    <p class="sub" id="maSub">月線為 20 日均線、季線為 60 日均線，以含息淨值計算，避免除息造成誤判。</p>
+    <p class="ma-summary" id="maSummary"></p>
+    <div class="table-wrap"><table id="maTable"></table></div>
   </section>
 
   <section class="card">
@@ -413,6 +425,45 @@ function renderChart(end) {
 }
 
 // ---------- 風險指標 ----------
+// ---------- 均線訊號 ----------
+const MA_LINES = [{ key: "m", label: "月線", n: 20 }, { key: "q", label: "季線", n: 60 }];
+function movingAvg(s, j, n) {
+  let sum = 0;
+  for (let k = j - n + 1; k <= j; k++) sum += s.values[k];
+  return sum / n;
+}
+function maStatus(s, end, n) {
+  const j = idxOnOrBefore(s, end.getTime());
+  if (j < n) return null;   // 資料不足
+  const ma = movingAvg(s, j, n), maPrev = movingAvg(s, j - 1, n);
+  const below = s.values[j] < ma;
+  return { gap: s.values[j] / ma - 1, below, cross: below && s.values[j - 1] >= maPrev, date: s.dates[j] };
+}
+function sigBadge(st, label) {
+  if (!st) return `<span class="na">資料不足</span>`;
+  if (st.cross) return `<span class="sig cross">▼ 今日跌破${label}</span>`;
+  if (st.below) return `<span class="sig below">▼ ${label}之下</span>`;
+  return `<span class="sig above">▲ ${label}之上</span>`;
+}
+function renderMA(end) {
+  const list = active(), tbl = document.getElementById("maTable");
+  const rows = list.map(s => ({ s, st: Object.fromEntries(MA_LINES.map(l => [l.key, maStatus(s, end, l.n)])) }));
+  const crossed = l => rows.filter(r => r.st[l.key]?.cross).map(r => r.s.name);
+  document.getElementById("maSummary").innerHTML = MA_LINES.map(l => {
+    const names = crossed(l);
+    return `今日跌破${l.label}：${names.length ? `<strong class="down">${names.join("、")}</strong>` : "無"}`;
+  }).join("　｜　");
+  let h = "<thead><tr><th>標的</th><th>資料日</th>" +
+    MA_LINES.map(l => `<th>距${l.label}（${l.n}日）</th><th>${l.label}狀態</th>`).join("") + "</tr></thead><tbody>";
+  rows.forEach(({ s, st }) => {
+    h += `<tr><td><span class="swatch" style="background:${s.color}"></span><span class="name">${s.name}</span></td>` +
+      `<td>${(st.m || st.q)?.date ?? "—"}</td>` +
+      MA_LINES.map(l => `<td class="${cls(st[l.key]?.gap)}">${st[l.key] ? pct(st[l.key].gap) : "—"}</td><td>${sigBadge(st[l.key], l.label)}</td>`).join("") +
+      "</tr>";
+  });
+  tbl.innerHTML = h + "</tbody>";
+}
+
 function renderRisk(end) {
   const tbl = document.getElementById("riskTable");
   const p = PERIODS.find(x => x.key === state.focus);
@@ -452,7 +503,7 @@ function render() {
   document.getElementById("asof").textContent = end
     ? `資料截至 ${fmtDate(end)}（所選標的都已公布淨值的最新交易日）· 報告更新於 __GENERATED__ · 共 ${DATA.length} 檔標的`
     : "請至少選擇一個標的";
-  if (end) { renderTable(end); renderChart(end); renderRisk(end); }
+  if (end) { renderMA(end); renderTable(end); renderChart(end); renderRisk(end); }
   else { renderTable(new Date()); }
   save();
 }
