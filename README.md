@@ -14,13 +14,14 @@ GitHub Actions 每天台灣時間 18:00 自動產生報告並發布（`.github/w
 python build_report.py
 ```
 
-- 標的清單在 `funds.json`。野村基金填 `fundId`（基金頁網址的 `gradeId`）；股票 / ETF 填 Yahoo Finance 代號，上市加 `.TW`、上櫃加 `.TWO`。
+- 標的清單在 `funds.json`。野村基金填 `fundId`（基金頁網址的 `gradeId`），可加 `moneydj`（MoneyDJ 基金代碼，例如 `ACIC04`）提早取得最新淨值；股票 / ETF 填 Yahoo Finance 代號，上市加 `.TW`、上櫃加 `.TWO`。
 - 結束日為所有標的都已公布淨值的最新交易日：當天淨值已公布就用當天，否則用前一個交易日。
 - 區間算法與野村投信官網一致：以起始日當天淨值為基準，非交易日取前一交易日，月底對月底。
 
 ## 資料來源
 
 - 野村投信官網：基金每日淨值
+- MoneyDJ：官網尚未公布的最新淨值（通常較早公布；與官網重疊日期的淨值一致才採用）
 - Yahoo Finance：股票 / ETF 含息調整價
 - 臺灣證券交易所：除息參考價（校正 Yahoo 漏算或錯算的配息）、缺漏日收盤價
 

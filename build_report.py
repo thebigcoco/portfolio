@@ -8,6 +8,7 @@
 所有序列都轉成「總報酬指數」(配息再投入)，績效才可以互相比較。
 """
 import json
+import re
 import ssl
 import sys
 import time
@@ -37,7 +38,7 @@ def fetch_nomura(inst):
     if res["responseHeader"]["returnCode"] != "C0000":
         raise RuntimeError(res["responseHeader"]["returnMsg"])
     fund = res["responseBody"]["data"][0]
-    series, idx, prev = [], None, None
+    series, navs, idx, prev = [], {}, None, None
     for row in fund["dayAchievements"]:
         nav = row["netWorth"]
         if not nav:
@@ -45,8 +46,47 @@ def fetch_nomura(inst):
         div = row.get("amountOfInterest") or 0
         idx = nav if idx is None else idx * (nav + div) / prev
         prev = nav
-        series.append((row["day"].replace("/", "-"), idx))
+        day = row["day"].replace("/", "-")
+        navs[day] = nav
+        series.append((day, idx))
+
+    # MoneyDJ 通常比野村官網早公布當天淨值：官網還沒有的最新幾天用 MoneyDJ 補上
+    if inst.get("moneydj"):
+        try:
+            recent = fetch_moneydj(inst["moneydj"])
+        except Exception as e:
+            print(f"  {inst['name']}: MoneyDJ 查詢失敗，只用野村官網資料: {e}")
+            recent = []
+        overlap = [(d, v) for d, v in recent if d in navs]
+        mismatch = [(d, v, navs[d]) for d, v in overlap if abs(v - navs[d]) > 0.005]
+        if not overlap or mismatch:
+            print(f"  {inst['name']}: MoneyDJ 淨值與官網對不上，不採用 {mismatch[:3]}")
+        else:
+            for d, v in recent:
+                if d > series[-1][0]:
+                    series.append((d, series[-1][1] * v / prev))
+                    prev = v
+                    print(f"  {inst['name']}: {d} 官網尚未公布，採用 MoneyDJ 淨值 {v}")
     return series, fund["fundName"]
+
+
+def fetch_moneydj(code):
+    """MoneyDJ 基金頁的「近20日淨值」：[(YYYY-MM-DD, 淨值)]，日期由舊到新。
+    表格只有月/日，年份從「最新值 台幣(YYYY/MM/DD)」往回推（跨年時年份減一）。"""
+    req = urllib.request.Request(f"https://m.moneydj.com/a1.aspx?a={code}", headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as r:
+        page = r.read().decode("utf-8", errors="replace")
+    latest = re.search(r"\((\d{4})/(\d{2})/(\d{2})\)", page)
+    rows = re.findall(r"<td>(\d{2})/(\d{2})</td>\s*<td[^>]*>.*?([\d,]+\.\d+)", page, re.S)
+    if not latest or not rows:
+        raise RuntimeError("頁面格式不符，找不到淨值表")
+    year, out, last_month = int(latest.group(1)), [], None
+    for mm, dd, nav in rows:   # 表格由新到舊
+        if last_month is not None and int(mm) > last_month:
+            year -= 1
+        last_month = int(mm)
+        out.append((f"{year}-{mm}-{dd}", float(nav.replace(",", ""))))
+    return sorted(out)
 
 
 def fetch_yahoo(inst):
