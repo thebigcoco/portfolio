@@ -1,0 +1,5 @@
+# 本機快取（證交所歷史除息資料，可重新下載）
+cache/
+__pycache__/
+# Claude Code 本機設定
+.claude/

@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f5f5f3; --surface: #fcfcfb; --border: #e3e2de; --grid: #ebeae6;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984;
+  --accent: #2a78d6; --accent-soft: #e3eefb;
+  --up: #d03b3b; --down: #0f8a3c;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:#121211; --surface:#1a1a19; --border:#2f2f2c; --grid:#262624;
+    --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#3987e5; --accent-soft:#1d2c40;
+    --up:#ff6b6b; --down:#3fc46f;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --border:#2f2f2c; --grid:#262624;
+  --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#3987e5; --accent-soft:#1d2c40;
+  --up:#ff6b6b; --down:#3fc46f;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text);
+  font: 15px/1.55 "Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif; }
+.wrap { max-width:1560px; margin:0 auto; padding:32px 16px 64px; }
+header h1 { margin:0 0 4px; font-size:26px; letter-spacing:.01em; }
+header p { margin:0; color:var(--text-2); font-size:14px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; margin-top:20px; }
+.card h2 { margin:0 0 4px; font-size:17px; }
+.card .sub { margin:0 0 16px; color:var(--text-2); font-size:13px; }
+.controls { display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; }
+.group { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.group > .lbl { color:var(--text-2); font-size:13px; margin-right:4px; }
+.chip { border:1px solid var(--border); background:transparent; color:var(--text-2);
+  border-radius:999px; padding:4px 12px; font:inherit; font-size:13px; cursor:pointer; }
+.chip[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--text); }
+.chip:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.swatch { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+.inst-chip[aria-pressed="false"] .swatch { opacity:.25; }
+input[type=date] { font:inherit; font-size:13px; padding:3px 6px; border:1px solid var(--border);
+  border-radius:6px; background:var(--surface); color:var(--text); }
+.custom { display:none; gap:6px; align-items:center; font-size:13px; color:var(--text-2); }
+.custom.on { display:flex; }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; }
+th, td { padding:10px 9px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--grid); }
+th:first-child, td:first-child { text-align:left; position:sticky; left:0; background:var(--surface); }
+thead th { font-size:13px; color:var(--text-2); font-weight:500; cursor:pointer; user-select:none; }
+thead th.active { color:var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+thead th .range { display:block; font-size:11px; color:var(--muted); font-weight:400; }
+td .name { font-weight:500; }
+td .meta { display:block; font-size:12px; color:var(--muted); }
+.up { color:var(--up); } .down { color:var(--down); } .na { color:var(--muted); }
+td.best { font-weight:700; }
+td.best::after { content:"▲"; font-size:9px; margin-left:3px; color:var(--muted); vertical-align:2px; }
+.chart-box { position:relative; }
+svg { display:block; width:100%; overflow:visible; }
+.axis text { fill:var(--muted); font-size:11px; }
+.tip { position:absolute; pointer-events:none; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:8px 10px; font-size:12px; box-shadow:0 4px 16px rgba(0,0,0,.12);
+  display:none; min-width:170px; font-variant-numeric:tabular-nums; }
+.tip .d { color:var(--text-2); margin-bottom:4px; }
+.tip .r { display:flex; justify-content:space-between; gap:12px; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--text-2); margin-bottom:8px; }
+.note { color:var(--muted); font-size:12px; margin-top:20px; line-height:1.7; }
+.empty { color:var(--muted); padding:24px 0; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>__TITLE__</h1>
+    <p id="asof"></p>
+  </header>
+
+  <section class="card">
+    <div class="controls">
+      <div class="group" id="instGroup"><span class="lbl">標的</span></div>
+      <div class="group" id="modeGroup"><span class="lbl">顯示</span>
+        <button class="chip" data-mode="cum" aria-pressed="true">累積報酬</button>
+        <button class="chip" data-mode="ann" aria-pressed="false">年化報酬</button>
+      </div>
+    </div>
+    <div class="controls" style="margin-top:12px">
+      <div class="group" id="periodGroup"><span class="lbl">比較區間</span></div>
+      <div class="custom" id="customBox">
+        <input type="date" id="cStart"> 至 <input type="date" id="cEnd">
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>區間報酬比較</h2>
+    <p class="sub">點欄位標題可切換下方走勢圖與風險指標的區間。▲ 表示該區間表現最佳。</p>
+    <div class="table-wrap"><table id="perfTable"></table></div>
+  </section>
+
+  <section class="card">
+    <h2 id="chartTitle">淨值走勢</h2>
+    <p class="sub">起點設為 100，配息再投入（總報酬）。<span id="scaleNote"></span></p>
+    <div class="legend" id="legend"></div>
+    <div class="chart-box" id="chartBox">
+      <svg id="chart" role="img" aria-label="走勢比較圖"></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 id="riskTitle">風險指標</h2>
+    <p class="sub">以所選區間的每日資料計算。</p>
+    <div class="table-wrap"><table id="riskTable"></table></div>
+  </section>
+
+  <p class="note">
+    資料來源：野村投信官網（基金淨值）、Yahoo Finance（ETF 含息調整價）。報告產生時間 __GENERATED__。<br>
+    基金淨值於當天 16:00 後才公布，所有標的一律以報告更新日的前一天為結束日。區間報酬 = 結束日淨值 ÷ 起始日淨值 − 1，例如 2026-09-28 的近一年 = 2026-09-28 淨值 ÷ 2025-09-28 淨值 − 1（與野村投信官網算法相同）；起始日若非交易日，取前一個交易日的淨值；結束日為月底時，起始日也取月底；成立時間不足的區間顯示「—」。
+    年化報酬只計算一年以上的區間。台股加權指數 (^TWII) 為價格指數，未含現金股利，與含息標的比較時會偏低。過去績效不代表未來表現，本報告僅供參考，不構成投資建議。
+  </p>
+</div>
+
+<script>
+const DATA = __DATA__;
+const GENERATED = new Date("__GENERATED__".slice(0, 10) + "T00:00:00");
+const CUTOFF = new Date(GENERATED.getFullYear(), GENERATED.getMonth(), GENERATED.getDate() - 1);
+const PERIODS = [
+  { key:"1M",  label:"近一個月", months:1 },
+  { key:"3M",  label:"近三個月", months:3 },
+  { key:"6M",  label:"近半年", months:6 },
+  { key:"YTD", label:"今年以來" },
+  { key:"1Y",  label:"近一年", years:1 },
+  { key:"2Y",  label:"近兩年", years:2 },
+  { key:"3Y",  label:"近三年", years:3 },
+  { key:"4Y",  label:"近四年", years:4 },
+  { key:"5Y",  label:"近五年", years:5 },
+  { key:"10Y", label:"近十年", years:10 },
+  { key:"SINCE", label:"成立至今" },
+  { key:"CUSTOM", label:"自訂區間" },
+];
+const COLORS = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
+const DAY = 864e5;
+
+const state = {
+  inst: DATA.map(() => true),
+  periods: new Set(PERIODS.filter(p => p.key !== "CUSTOM").map(p => p.key)),
+  focus: "1Y",
+  mode: "cum",
+  custom: null,
+};
+try { Object.assign(state, restore()); } catch (e) {}
+
+// ---------- 日期與數值工具 ----------
+const toDate = s => new Date(s + "T00:00:00");
+const fmtDate = d => { d = new Date(d); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+DATA.forEach((s, i) => {
+  s.t = s.dates.map(d => toDate(d).getTime());
+  s.color = `var(${COLORS[i % COLORS.length]})`;
+});
+function idxOnOrBefore(s, t) {
+  let lo = 0, hi = s.t.length - 1, ans = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (s.t[m] <= t) { ans = m; lo = m + 1; } else hi = m - 1; }
+  return ans;
+}
+function addMonths(d, m) {
+  // 月底對月底（與投信公會/官網算法一致）：9/30 往前 6 個月是 3/31，不是 3/30
+  const r = new Date(d); const day = r.getDate();
+  const isMonthEnd = day === new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate();
+  r.setDate(1); r.setMonth(r.getMonth() + m);
+  const last = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate();
+  r.setDate(isMonthEnd ? last : Math.min(day, last));
+  return r;
+}
+const active = () => DATA.filter((_, i) => state.inst[i]);
+function asOf() {
+  const list = active();
+  if (!list.length) return null;
+  // 基金淨值當天 16:00 後才公布，結束日固定為報告更新日的前一天；
+  // 該日若非交易日，各標的取當日（含）之前最近一筆資料
+  return new Date(Math.min(CUTOFF.getTime(), ...list.map(s => s.t[s.t.length - 1])));
+}
+function periodRange(p, end) {
+  if (p.key === "CUSTOM") {
+    if (!state.custom) return null;
+    const s = toDate(state.custom[0]), e = toDate(state.custom[1]);
+    return s < e ? [s, e < end ? e : end] : null;
+  }
+  if (p.key === "YTD") return [new Date(end.getFullYear() - 1, 11, 31), end];
+  // 成立至今：圖表用最早的資料起始日；每檔標的的報酬則由 rangeFor() 從各自起始日計算
+  if (p.key === "SINCE") return [new Date(Math.min(...active().map(s => s.t[0]))), end];
+  return [addMonths(end, -(p.months || p.years * 12)), end];
+}
+function rangeFor(p, end, s) {
+  return p.key === "SINCE" ? [new Date(s.t[0]), end] : periodRange(p, end);
+}
+function periodReturn(s, range) {
+  const [a, b] = range;
+  if (s.t[0] > a.getTime()) return null;           // 成立時間不足
+  const i = idxOnOrBefore(s, a.getTime()), j = idxOnOrBefore(s, b.getTime());
+  if (i < 0 || j <= i) return null;
+  const cum = s.values[j] / s.values[i] - 1;
+  const yrs = (b - a) / DAY / 365.25;
+  return { cum, ann: yrs >= 0.999 ? Math.pow(1 + cum, 1 / yrs) - 1 : null, i, j, yrs };
+}
+const pct = (v, d = 2) => v == null ? "—" : (v > 0 ? "+" : "") + (v * 100).toFixed(d) + "%";
+const cls = v => v == null ? "na" : v > 0 ? "up" : v < 0 ? "down" : "";
+
+// ---------- 控制項 ----------
+function chip(text, pressed, onClick, extraClass = "") {
+  const b = document.createElement("button");
+  b.className = "chip " + extraClass; b.type = "button";
+  b.setAttribute("aria-pressed", pressed); b.innerHTML = text;
+  b.onclick = onClick; return b;
+}
+function buildControls() {
+  const ig = document.getElementById("instGroup");
+  ig.querySelectorAll(".chip").forEach(n => n.remove());
+  DATA.forEach((s, i) => ig.appendChild(chip(
+    `<span class="swatch" style="background:${s.color}"></span>${s.name}`,
+    state.inst[i], () => { state.inst[i] = !state.inst[i]; render(); }, "inst-chip")));
+
+  const pg = document.getElementById("periodGroup");
+  pg.querySelectorAll(".chip").forEach(n => n.remove());
+  PERIODS.forEach(p => pg.appendChild(chip(p.label, state.periods.has(p.key), () => {
+    if (state.periods.has(p.key)) state.periods.delete(p.key); else state.periods.add(p.key);
+    if (p.key === "CUSTOM" && state.periods.has("CUSTOM")) state.focus = "CUSTOM";
+    if (!state.periods.has(state.focus)) state.focus = [...state.periods][0] || null;
+    render();
+  })));
+
+  document.querySelectorAll("#modeGroup .chip").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.mode === state.mode);
+    b.onclick = () => { state.mode = b.dataset.mode; render(); };
+  });
+  document.getElementById("customBox").classList.toggle("on", state.periods.has("CUSTOM"));
+}
+function initCustom() {
+  const end = asOf() || new Date();
+  if (!state.custom) state.custom = [fmtDate(addMonths(end, -12)), fmtDate(end)];
+  const [cs, ce] = [document.getElementById("cStart"), document.getElementById("cEnd")];
+  cs.value = state.custom[0]; ce.value = state.custom[1];
+  const upd = () => { if (cs.value && ce.value) { state.custom = [cs.value, ce.value]; render(); } };
+  cs.onchange = upd; ce.onchange = upd;
+}
+
+// ---------- 績效表 ----------
+function renderTable(end) {
+  const tbl = document.getElementById("perfTable");
+  const list = active();
+  const periods = PERIODS.filter(p => state.periods.has(p.key));
+  if (!list.length || !periods.length) { tbl.innerHTML = `<tr><td class="empty">請至少選擇一個標的與一個區間</td></tr>`; return; }
+  const ranges = periods.map(p => periodRange(p, end));
+  const vals = list.map(s => periods.map((p, c) => {
+    const r = ranges[c] && rangeFor(p, end, s);
+    if (!r) return null;
+    const x = periodReturn(s, r); if (!x) return null;
+    return state.mode === "ann" ? x.ann ?? x.cum : x.cum;
+  }));
+  const best = periods.map((p, c) => {
+    // 成立至今各標的期間長短不同，累積報酬不能直接比高低，只在年化模式標示最佳
+    if (p.key === "SINCE" && state.mode !== "ann") return null;
+    const col = vals.map(r => r[c]).filter(v => v != null);
+    return list.length > 1 && col.length > 1 ? Math.max(...col) : null;
+  });
+  let h = "<thead><tr><th>標的</th>";
+  periods.forEach((p, c) => {
+    const r = ranges[c];
+    const short = d => fmtDate(d).slice(2).replace(/-/g, "/");
+    const sub = !r ? "未設定" : p.key === "SINCE" ? `各自起始 ~ ${short(r[1])}` : `${short(r[0])}~${short(r[1])}`;
+    const annNote = state.mode === "ann" && (p.months || p.key === "YTD") ? "（未年化）" : "";
+    h += `<th data-k="${p.key}" class="${p.key === state.focus ? "active" : ""}">${p.label}${annNote}<span class="range">${sub}</span></th>`;
+  });
+  h += "</tr></thead><tbody>";
+  list.forEach((s, r) => {
+    h += `<tr><td><span class="swatch" style="background:${s.color}"></span><span class="name">${s.name}</span>` +
+         `<span class="meta">資料起始 ${s.dates[0]}</span></td>`;
+    vals[r].forEach((v, c) => {
+      h += `<td class="${cls(v)}${v != null && v === best[c] ? " best" : ""}">${pct(v)}</td>`;
+    });
+    h += "</tr>";
+  });
+  tbl.innerHTML = h + "</tbody>";
+  tbl.querySelectorAll("thead th[data-k]").forEach(th => th.onclick = () => { state.focus = th.dataset.k; render(); });
+}
+
+// ---------- 走勢圖 ----------
+function niceTicks(min, max, n = 5) {
+  const step0 = (max - min) / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0);
+  const out = []; for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+function renderChart(end) {
+  const svg = document.getElementById("chart"), tip = document.getElementById("tip");
+  const legend = document.getElementById("legend");
+  const p = PERIODS.find(x => x.key === state.focus);
+  const range = p && periodRange(p, end);
+  document.getElementById("chartTitle").textContent = p ? `淨值走勢：${p.label}` : "淨值走勢";
+  svg.innerHTML = ""; legend.innerHTML = ""; tip.style.display = "none";
+  if (!range || !active().length) { svg.setAttribute("height", 60); svg.innerHTML = `<text x="0" y="30" fill="var(--muted)">請選擇區間與標的</text>`; return; }
+
+  // 起點：每檔取區間開始日（或成立日）之值，重設為 100
+  const series = active().map(s => {
+    let i = idxOnOrBefore(s, range[0].getTime()); if (i < 0) i = 0;
+    const j = idxOnOrBefore(s, range[1].getTime());
+    const base = s.values[i], pts = [];
+    for (let k = i; k <= j; k++) pts.push([Math.max(s.t[k], range[0].getTime()), s.values[k] / base * 100]);
+    return { s, pts, late: s.t[0] > range[0].getTime() };
+  }).filter(x => x.pts.length > 1);
+
+  series.forEach(({ s, late }) => legend.insertAdjacentHTML("beforeend",
+    `<span><span class="swatch" style="background:${s.color}"></span>${s.name}${late ? `（${s.dates[0].slice(0, 7)} 起算）` : ""}</span>`));
+
+  const W = svg.clientWidth || 800, H = Math.max(260, Math.min(420, W * 0.5));
+  const m = { l: 44, r: series.length <= 4 ? 120 : 16, t: 10, b: 28 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+  const x0 = range[0].getTime(), x1 = range[1].getTime();
+  let lo = Infinity, hi = -Infinity;
+  series.forEach(({ pts }) => pts.forEach(([, v]) => { lo = Math.min(lo, v); hi = Math.max(hi, v); }));
+  // 長區間（> 5 年）用對數刻度，讓早期的漲跌幅也看得清楚
+  const logScale = (x1 - x0) / DAY > 365.25 * 5 && hi / lo > 4;
+  document.getElementById("scaleNote").textContent = logScale ? "長期區間採對數刻度，相同斜率代表相同的報酬率。" : "";
+  const f = logScale ? Math.log : v => v;
+  let flo = f(lo), fhi = f(hi);
+  const pad = (fhi - flo) * 0.06 || 1; flo -= pad; fhi += pad;
+  const X = t => m.l + (t - x0) / (x1 - x0) * (W - m.l - m.r);
+  const Y = v => m.t + (fhi - f(v)) / (fhi - flo) * (H - m.t - m.b);
+  lo = logScale ? Math.exp(flo) : flo; hi = logScale ? Math.exp(fhi) : fhi;
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent = svg) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent.appendChild(n); return n; };
+
+  const axis = el("g", { class: "axis" });
+  const ticks = logScale
+    ? [...Array(12).keys()].flatMap(e => [1, 2, 5].map(k => k * 10 ** e)).filter(v => v >= lo && v <= hi)
+    : niceTicks(lo, hi);
+  ticks.forEach(v => {
+    el("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: v === 100 ? "var(--muted)" : "var(--grid)", "stroke-width": 1, "stroke-dasharray": v === 100 ? "3 3" : "" }, axis);
+    el("text", { x: m.l - 8, y: Y(v) + 4, "text-anchor": "end" }, axis).textContent = v;
+  });
+  const spanDays = (x1 - x0) / DAY;
+  const monthStep = spanDays > 365 * 6 ? 12 : spanDays > 365 * 2.5 ? 6 : spanDays > 400 ? 3 : spanDays > 200 ? 2 : 1;
+  let d = new Date(range[0].getFullYear(), range[0].getMonth() + 1, 1), lastX = -999;
+  while (d.getTime() <= x1) {
+    if (d.getMonth() % monthStep === 0) {
+      const x = X(d.getTime());
+      if (x - lastX > 48) {
+        el("text", { x, y: H - 8, "text-anchor": "middle" }, axis).textContent =
+          monthStep >= 12 ? d.getFullYear() : `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+        lastX = x;
+      }
+    }
+    d.setMonth(d.getMonth() + 1);
+  }
+
+  series.forEach(({ s, pts }) => el("path", {
+    d: pts.map(([t, v], k) => (k ? "L" : "M") + X(t).toFixed(1) + " " + Y(v).toFixed(1)).join(""),
+    fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round",
+  }));
+
+  // 線尾直接標示（≤4 條），避免標籤互相重疊
+  if (series.length <= 4) {
+    const labels = series.map(({ s, pts }) => ({ s, v: pts[pts.length - 1][1], y: Y(pts[pts.length - 1][1]) })).sort((a, b) => a.y - b.y);
+    for (let k = 1; k < labels.length; k++) labels[k].y = Math.max(labels[k].y, labels[k - 1].y + 30);
+    labels.forEach(({ s, v, y }) => {
+      const t = el("text", { x: W - m.r + 8, y: y + 4, "font-size": 12, fill: "var(--text)" });
+      t.textContent = s.name.length > 8 ? s.name.slice(0, 8) + "…" : s.name;
+      el("text", { x: W - m.r + 8, y: y + 18, "font-size": 12, fill: "var(--text-2)" }).textContent = pct(v / 100 - 1, 1);
+    });
+  }
+
+  // 十字線 + 提示框
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-width": 1, visibility: "hidden" });
+  const dots = series.map(({ s }) => el("circle", { r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }));
+  const hit = el("rect", { x: m.l, y: 0, width: W - m.l - m.r, height: H, fill: "transparent" });
+  const hide = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(c => c.setAttribute("visibility", "hidden")); tip.style.display = "none"; };
+  const move = ev => {
+    const rect = svg.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) * (W / rect.width);
+    const t = x0 + (px - m.l) / (W - m.l - m.r) * (x1 - x0);
+    const rows = [];
+    series.forEach(({ s, pts }, k) => {
+      let lo2 = 0, hi2 = pts.length - 1, a = -1;
+      while (lo2 <= hi2) { const mid = (lo2 + hi2) >> 1; if (pts[mid][0] <= t) { a = mid; lo2 = mid + 1; } else hi2 = mid - 1; }
+      if (a < 0) { dots[k].setAttribute("visibility", "hidden"); return; }
+      const [pt, pv] = pts[a];
+      dots[k].setAttribute("cx", X(pt)); dots[k].setAttribute("cy", Y(pv)); dots[k].setAttribute("visibility", "visible");
+      rows.push({ s, v: pv, t: pt });
+    });
+    if (!rows.length) return hide();
+    const cx = X(Math.max(...rows.map(r => r.t)));
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    rows.sort((a, b) => b.v - a.v);
+    tip.innerHTML = `<div class="d">${fmtDate(Math.max(...rows.map(r => r.t)))}</div>` +
+      rows.map(r => `<div class="r"><span><span class="swatch" style="background:${r.s.color}"></span>${r.s.name}</span><span class="${cls(r.v - 100)}">${pct(r.v / 100 - 1)}</span></div>`).join("");
+    tip.style.display = "block";
+    const scale = rect.width / W, tw = tip.offsetWidth;
+    let left = cx * scale + 14; if (left + tw > rect.width) left = cx * scale - tw - 14;
+    tip.style.left = Math.max(0, left) + "px"; tip.style.top = (m.t + 8) + "px";
+  };
+  hit.addEventListener("pointermove", move);
+  hit.addEventListener("pointerleave", hide);
+}
+
+// ---------- 風險指標 ----------
+function renderRisk(end) {
+  const tbl = document.getElementById("riskTable");
+  const p = PERIODS.find(x => x.key === state.focus);
+  const range = p && periodRange(p, end);
+  document.getElementById("riskTitle").textContent = p ? `風險指標：${p.label}` : "風險指標";
+  if (!range || !active().length) { tbl.innerHTML = `<tr><td class="empty">請選擇區間與標的</td></tr>`; return; }
+  let h = "<thead><tr><th>標的</th><th>累積報酬</th><th>年化報酬</th><th>年化波動度</th><th>最大回撤</th><th>報酬 / 波動</th></tr></thead><tbody>";
+  active().forEach(s => {
+    const x = periodReturn(s, rangeFor(p, end, s));
+    let vol = null, mdd = null, ratio = null;
+    if (x) {
+      const rets = []; let peak = -Infinity; mdd = 0;
+      for (let k = x.i; k <= x.j; k++) {
+        if (k > x.i) rets.push(Math.log(s.values[k] / s.values[k - 1]));
+        peak = Math.max(peak, s.values[k]); mdd = Math.min(mdd, s.values[k] / peak - 1);
+      }
+      const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+      const perYear = rets.length / x.yrs;
+      vol = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / (rets.length - 1) * perYear);
+      const annRet = Math.pow(1 + x.cum, 1 / x.yrs) - 1;
+      ratio = vol ? annRet / vol : null;
+    }
+    h += `<tr><td><span class="swatch" style="background:${s.color}"></span><span class="name">${s.name}</span></td>` +
+      `<td class="${cls(x?.cum)}">${pct(x?.cum)}</td>` +
+      `<td class="${cls(x?.ann)}">${x && x.ann != null ? pct(x.ann) : "—"}</td>` +
+      `<td>${vol == null ? "—" : (vol * 100).toFixed(2) + "%"}</td>` +
+      `<td class="${cls(mdd)}">${mdd == null ? "—" : pct(mdd)}</td>` +
+      `<td>${ratio == null ? "—" : ratio.toFixed(2)}</td></tr>`;
+  });
+  tbl.innerHTML = h + "</tbody>";
+}
+
+// ---------- 主流程 ----------
+function render() {
+  buildControls();
+  const end = asOf();
+  document.getElementById("asof").textContent = end
+    ? `資料截至 ${fmtDate(end)}（報告更新日 ${fmtDate(GENERATED)}，${end < CUTOFF
+        ? `前一天 ${fmtDate(CUTOFF)} 非交易日，採最近交易日`
+        : "以前一天為準"}）· 共 ${DATA.length} 檔標的`
+    : "請至少選擇一個標的";
+  if (end) { renderTable(end); renderChart(end); renderRisk(end); }
+  else { renderTable(new Date()); }
+  save();
+}
+function save() {
+  try { localStorage.setItem("perf-report-v3", JSON.stringify({ ...state, periods: [...state.periods], inst: undefined })); } catch (e) {}
+}
+function restore() {
+  const o = JSON.parse(localStorage.getItem("perf-report-v3") || "null");
+  if (!o) return {};
+  return { periods: new Set(o.periods), focus: o.focus, mode: o.mode, custom: o.custom };
+}
+initCustom();
+render();
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => renderChart(asOf()), 150); });
+</script>
+</body>
+</html>
