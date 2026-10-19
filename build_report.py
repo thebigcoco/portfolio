@@ -71,13 +71,16 @@ def fetch_nomura(inst):
 
 
 def fetch_moneydj(code):
-    """MoneyDJ 基金頁的「近20日淨值」：[(YYYY-MM-DD, 淨值)]，日期由舊到新。
-    表格只有月/日，年份從「最新值 台幣(YYYY/MM/DD)」往回推（跨年時年份減一）。"""
-    req = urllib.request.Request(f"https://m.moneydj.com/a1.aspx?a={code}", headers={"User-Agent": "Mozilla/5.0"})
+    """MoneyDJ 電腦版淨值頁的「最近30日淨值」：[(YYYY-MM-DD, 淨值)]，日期由舊到新。
+    手機版 (m.moneydj.com) 更新較慢（2026-10-19 傍晚手機版優質還停在 10/16），所以用電腦版。
+    表格只有月/日，年份從「淨值日期 YYYY/MM/DD」往回推（跨年時年份減一）。"""
+    req = urllib.request.Request(f"https://www.moneydj.com/funddj/ya/yp010000.djhtm?a={code}",
+                                 headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
     with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as r:
-        page = r.read().decode("utf-8", errors="replace")
-    latest = re.search(r"\((\d{4})/(\d{2})/(\d{2})\)", page)
-    rows = re.findall(r"<td>(\d{2})/(\d{2})</td>\s*<td[^>]*>.*?([\d,]+\.\d+)", page, re.S)
+        page = r.read().decode("cp950", errors="replace")   # 頁面為 Big5 編碼
+    latest = re.search(r">(\d{4})/(\d{2})/(\d{2})</td>", page)
+    rows = re.findall(r'<td class="t3n0c1(?:_rev)?">(\d{2})/(\d{2})</td>\s*'
+                      r'<td class="t3n1(?:_rev)?">([\d,]+\.\d+)</td>', page)
     if not latest or not rows:
         raise RuntimeError("頁面格式不符，找不到淨值表")
     year, out, last_month = int(latest.group(1)), [], None
