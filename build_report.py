@@ -119,6 +119,11 @@ def fetch_yahoo(inst):
         factor = {d: v / close_by_date[d] for d, v in series.items() if d in close_by_date}
         fill_from_twse(inst, [d for d, v in zip(dates, adj) if not v], series, factor)
         series = sorted(series.items())
+    elif inst["symbol"].upper() == "^TWII":
+        # 加權指數沒有除息調整，調整係數固定為 1（2026-10-20 Yahoo 缺加權指數，卡住整份報告的結束日）
+        series = dict(series)
+        fill_from_twse(inst, [d for d, v in zip(dates, adj) if not v], series, {d: 1.0 for d in series})
+        series = sorted(series.items())
     # 台股有漲跌幅限制（2015 年前 7%、之後 10%），超過的單日變動必為資料錯誤才能清理；
     # 美股等無漲跌幅限制的市場可能真的單日暴跌 50%（如 AAPL 2000-09-29），不可套用
     if inst["symbol"].upper().endswith((".TW", ".TWO")):
@@ -187,15 +192,20 @@ def fix_dividends(inst, series, close):
 
 
 def fill_from_twse(inst, missing, series, factor):
-    """Yahoo 近期偶爾缺某天的價格（例如 0050 的 2026-10-14 為空值），用證交所收盤價補上。
+    """Yahoo 近期偶爾缺某天的價格（例如 0050 的 2026-10-14、加權指數的 2026-10-20 為空值），用證交所資料補上：
+    個股 / ETF 用 STOCK_DAY 收盤價，加權指數用 FMTQIK（每日市場成交資訊）的收盤指數。
     只補最近 90 天內的缺漏；調整係數取前一個有資料交易日的值。"""
     cutoff = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
     missing = [d for d in missing if d >= cutoff]
     code = inst["symbol"].split(".")[0]
     for month in sorted({d[:7] for d in missing}):
+        if code == "^TWII":
+            url, col = f"https://www.twse.com.tw/exchangeReport/FMTQIK?response=json&date={month.replace('-', '')}01", 4
+        else:
+            url, col = (f"https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json"
+                        f"&date={month.replace('-', '')}01&stockNo={code}"), 6
         try:
-            res = http(f"https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json"
-                       f"&date={month.replace('-', '')}01&stockNo={code}")
+            res = http(url)
         except Exception as e:
             print(f"  {inst['name']}: 證交所資料查詢失敗 {month}: {e}")
             continue
@@ -203,7 +213,7 @@ def fill_from_twse(inst, missing, series, factor):
         for row in res.get("data") or []:
             y, m, d = row[0].split("/")
             try:
-                twse[f"{int(y) + 1911}-{m}-{d}"] = float(row[6].replace(",", ""))
+                twse[f"{int(y) + 1911}-{m}-{d}"] = float(row[col].replace(",", ""))
             except ValueError:
                 pass   # 停牌等無收盤價的日子
         for d in [x for x in missing if x.startswith(month)]:

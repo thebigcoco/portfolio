@@ -394,7 +394,8 @@ function renderChart(end) {
   // 十字線 + 提示框
   const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-width": 1, visibility: "hidden" });
   const dots = series.map(({ s }) => el("circle", { r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }));
-  const hit = el("rect", { x: m.l, y: 0, width: W - m.l - m.r, height: H, fill: "transparent" });
+  // 感應範圍往右多延伸 16px，滑鼠移到線尾附近就能選到最新一天
+  const hit = el("rect", { x: m.l, y: 0, width: W - m.l - m.r + 16, height: H, fill: "transparent" });
   const hide = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(c => c.setAttribute("visibility", "hidden")); tip.style.display = "none"; };
   const move = ev => {
     const rect = svg.getBoundingClientRect();
@@ -405,6 +406,8 @@ function renderChart(end) {
       let lo2 = 0, hi2 = pts.length - 1, a = -1;
       while (lo2 <= hi2) { const mid = (lo2 + hi2) >> 1; if (pts[mid][0] <= t) { a = mid; lo2 = mid + 1; } else hi2 = mid - 1; }
       if (a < 0) { dots[k].setAttribute("visibility", "hidden"); return; }
+      // 取離滑鼠最近的一天，而不是滑鼠左邊那一天（否則最新一天只有在最右邊 1px 才選得到）
+      if (a + 1 < pts.length && pts[a + 1][0] - t < t - pts[a][0]) a++;
       const [pt, pv] = pts[a];
       dots[k].setAttribute("cx", X(pt)); dots[k].setAttribute("cy", Y(pv)); dots[k].setAttribute("visibility", "visible");
       rows.push({ s, v: pv, t: pt });
