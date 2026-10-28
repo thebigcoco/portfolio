@@ -25,11 +25,19 @@ SSL_CTX = ssl.create_default_context()
 SSL_CTX.verify_flags &= ~ssl.VERIFY_X509_STRICT
 
 
-def http(url, body=None):
+def http(url, body=None, retries=3):
+    """連線中斷（如 2026-10-28 野村官網只傳了一部分資料就斷線）時自動重試。"""
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, headers=UA, method="POST" if data else "GET")
-    with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as r:
-        return json.load(r)
+    for attempt in range(1, retries + 1):
+        req = urllib.request.Request(url, data=data, headers=UA, method="POST" if data else "GET")
+        try:
+            with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as r:
+                return json.load(r)
+        except Exception as e:
+            if attempt == retries:
+                raise
+            print(f"  連線失敗，{attempt * 5} 秒後重試（{attempt}/{retries - 1}）: {e}")
+            time.sleep(attempt * 5)
 
 
 def fetch_nomura(inst):
@@ -315,7 +323,7 @@ def build_payload(cfg):
     for inst in cfg["instruments"]:
         try:
             series, full_name = SOURCES[inst["source"]](inst)
-        except Exception as e:  # 單一標的失敗不影響整份報告
+        except Exception as e:
             print(f"[失敗] {inst['name']}: {e}")
             continue
         print(f"[完成] {inst['name']}: {len(series)} 筆, {series[0][0]} ~ {series[-1][0]}")
@@ -335,6 +343,9 @@ def main():
     out_path = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "report.html"
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
     payload = build_payload(cfg)
+    if len(payload) < len(cfg["instruments"]):
+        # 少了標的就不發布，避免網站出現缺了某檔基金的報告；保留上一版，GitHub Actions 會顯示執行失敗
+        sys.exit("有標的抓取失敗，不產生報告（保留上一版 report.html）")
 
     template = (ROOT / "report_template.html").read_text(encoding="utf-8")
     html = (template

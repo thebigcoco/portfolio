@@ -12,7 +12,7 @@
   --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984;
   --accent: #2a78d6; --accent-soft: #e3eefb;
   --up: #d03b3b; --down: #0f8a3c;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948; --s9:#5f5e5a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -21,7 +21,7 @@
     --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
     --accent:#3987e5; --accent-soft:#1d2c40;
     --up:#ff6b6b; --down:#3fc46f;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --s9:#b4b2a9;
   }
 }
 :root[data-theme="dark"] {
@@ -30,7 +30,7 @@
   --text:#ffffff; --text-2:#c3c2b7; --muted:#8f8e86;
   --accent:#3987e5; --accent-soft:#1d2c40;
   --up:#ff6b6b; --down:#3fc46f;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --s9:#b4b2a9;
 }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--text);
@@ -161,7 +161,8 @@ const PERIODS = [
   { key:"SINCE", label:"成立至今" },
   { key:"CUSTOM", label:"自訂區間" },
 ];
-const COLORS = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
+// 8 色之後加一個中性灰；第 9 檔起的線改用虛線，避免只靠顏色分辨
+const COLORS = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8","--s9"];
 const DAY = 864e5;
 
 const state = {
@@ -378,6 +379,7 @@ function renderChart(end) {
   series.forEach(({ s, pts }) => el("path", {
     d: pts.map(([t, v], k) => (k ? "L" : "M") + X(t).toFixed(1) + " " + Y(v).toFixed(1)).join(""),
     fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round",
+    "stroke-dasharray": DATA.indexOf(s) >= 8 ? "6 4" : "",
   }));
 
   // 線尾直接標示（≤4 條），避免標籤互相重疊
