@@ -109,7 +109,7 @@ svg { display:block; width:100%; overflow:visible; }
 
   <section class="card">
     <h2>均線訊號</h2>
-    <p class="sub" id="maSub">月線為 20 日均線、季線為 60 日均線，以含息淨值計算，避免除息造成誤判。</p>
+    <p class="sub" id="maSub">月線為 20 日均線、季線為 60 日均線、半年線為 120 日均線，以含息淨值計算，避免除息造成誤判。</p>
     <p class="ma-summary" id="maSummary"></p>
     <div class="table-wrap"><table id="maTable"></table></div>
   </section>
@@ -431,7 +431,7 @@ function renderChart(end) {
 
 // ---------- 風險指標 ----------
 // ---------- 均線訊號 ----------
-const MA_LINES = [{ key: "m", label: "月線", n: 20 }, { key: "q", label: "季線", n: 60 }];
+const MA_LINES = [{ key: "m", label: "月線", n: 20 }, { key: "q", label: "季線", n: 60 }, { key: "h", label: "半年線", n: 120 }];
 function movingAvg(s, j, n) {
   let sum = 0;
   for (let k = j - n + 1; k <= j; k++) sum += s.values[k];
@@ -462,7 +462,7 @@ function renderMA(end) {
     MA_LINES.map(l => `<th>距${l.label}（${l.n}日）</th><th>${l.label}狀態</th>`).join("") + "</tr></thead><tbody>";
   rows.forEach(({ s, st }) => {
     h += `<tr><td><span class="swatch" style="background:${s.color}"></span><span class="name">${s.name}</span></td>` +
-      `<td>${(st.m || st.q)?.date ?? "—"}</td>` +
+      `<td>${(st.m || st.q || st.h)?.date ?? "—"}</td>` +
       MA_LINES.map(l => `<td class="${cls(st[l.key]?.gap)}">${st[l.key] ? pct(st[l.key].gap) : "—"}</td><td>${sigBadge(st[l.key], l.label)}</td>`).join("") +
       "</tr>";
   });
